@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c8241b">
+<title>Carte Pokémon</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{color-scheme:light dark;
+  --bg:light-dark(#f7f4ef,#161413);--card:light-dark(#ffffff,#221f1d);--ink:light-dark(#201a17,#f3ede6);
+  --muted:light-dark(#6f6660,#a99f97);--line:light-dark(#e6dfd6,#36302c);--red:#c8241b;--red-ink:#fff;
+  --ok:light-dark(#1f8a4c,#43c07a);--warn:light-dark(#9a5b00,#f0b04a);--gold:#f2b632}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--red);color:var(--red-ink);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+.top{display:flex;align-items:center;gap:10px;max-width:1100px;margin:auto}
+.top h1{font-size:19px;margin:0;flex:1;letter-spacing:.2px}
+.top button{background:none;border:0;color:inherit;padding:8px;font-size:14px;opacity:.9}
+.search{max-width:1100px;margin:8px auto 0;display:flex;gap:8px}
+.search input{flex:1;height:46px;border:0;border-radius:12px;padding:0 14px;font-size:17px;background:#fff;color:#201a17}
+.tabs{display:flex;gap:4px;max-width:1100px;margin:8px auto 0}
+.tabs button{flex:1;height:38px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.tabs button[aria-pressed=true]{background:#fff;color:var(--red)}
+main{max-width:1100px;margin:auto;padding:12px 12px calc(env(safe-area-inset-bottom) + 40px)}
+.filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:6px}
+.filters label{font-size:12px;color:var(--muted);display:grid;gap:3px}
+.filters select,.filters input{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px;font-size:16px}
+.note{font-size:13px;color:var(--muted);margin:4px 2px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{background:var(--card);border:2px solid transparent;border-radius:14px;overflow:hidden;position:relative;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tile.own{border-color:var(--ok)}
+.tile .im{aspect-ratio:600/825;background:var(--line);display:block;width:100%;object-fit:cover}
+.tile .info{padding:8px 10px 10px}
+.tile .nm{font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.prov{font-size:11px;font-weight:600;color:var(--warn);margin-left:4px}
+.badge{position:absolute;top:8px;left:8px;background:var(--ok);color:#fff;font-weight:700;font-size:13px;border-radius:20px;padding:3px 9px;display:flex;gap:4px;align-items:center}
+.wish{position:absolute;top:8px;right:8px;background:var(--gold);color:#201a17;border-radius:20px;padding:3px 8px;font-size:12px;font-weight:700}
+.add{position:absolute;right:8px;bottom:58px;width:44px;height:44px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:26px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.empty{text-align:center;color:var(--muted);padding:50px 10px}
+/* scheda carta */
+dialog{border:0;padding:0;border-radius:18px;background:var(--card);color:var(--ink);width:min(560px,100vw - 16px);max-height:calc(100dvh - 16px)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.sheet{padding:16px;display:grid;gap:14px}
+.sheet .head{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start}
+.sheet .head img{width:100%;border-radius:10px}
+.sheet h2{margin:0 0 4px;font-size:22px;line-height:1.15}
+.kv{font-size:14px;color:var(--muted)}
+.big{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.field{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.field input,.field select{height:46px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 12px;font-size:16px;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:22px}
+.step output{min-width:36px;text-align:center;font-size:22px;font-weight:700}
+.toggle{height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:0 14px;font-weight:600}
+.toggle[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:#201a17}
+.actions{display:flex;gap:10px}
+.btn{flex:1;height:50px;border-radius:12px;border:0;font-weight:700;font-size:16px;background:var(--line)}
+.btn.main{background:var(--red);color:#fff}
+.chart{height:120px;position:relative}
+.chart svg{position:absolute;inset:0;width:100%;height:100%}
+/* riepilogo */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--card);border-radius:14px;padding:14px}
+.stat b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.setrow{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--ok)}
+/* login */
+.login{max-width:380px;margin:40px auto;display:grid;gap:12px;background:var(--card);padding:22px;border-radius:18px}
+.login h2{margin:0}
+.msg{font-size:14px;color:var(--warn);min-height:1em}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);background:#201a17;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media(max-width:600px){.filters{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.sheet .head{grid-template-columns:120px 1fr}}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<header id="hdr" hidden>
+  <div class="top"><h1>Carte Pokémon</h1><button id="esci" type="button">Esci</button></div>
+  <div class="search"><input id="q" type="search" placeholder="Nome o numero (es. Darkrai, 045)" autocomplete="off" enterkeyhint="search"></div>
+  <div class="tabs"><button type="button" data-tab="catalogo" aria-pressed="true">Catalogo</button><button type="button" data-tab="riepilogo" aria-pressed="false">Riepilogo</button></div>
+</header>
+<main id="main"><p class="empty">Caricamento…</p></main>
+
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur = n => n == null ? "—" : n.toLocaleString("it-IT", {style:"currency", currency:"EUR"});
+const norm = s => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const CONDIZIONI = ["Mint","Near Mint","Excellent","Good","Played"];
+const GIORNI_PROVV = 42;
+
+const sb = window.supabase.createClient(CONFIG.url, CONFIG.key);
+const S = {user:null, cards:[], sets:[], rarita:[], tab:"catalogo",
+  f:{set:"", stato:"tutte", soglia:2, rar:6}};
+try { Object.assign(S.f, JSON.parse(localStorage.getItem("filtri") || "{}")); } catch(e) {}
+const salvaFiltri = () => { try { localStorage.setItem("filtri", JSON.stringify(S.f)); } catch(e) {} };
+
+function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),2200); }
+
+// ---------- login ----------
+function mostraLogin(msg=""){
+  $("#hdr").hidden = true;
+  $("#main").innerHTML = `<form class="login" id="fl">
+    <h2>Accedi</h2>
+    <label class="field">Email<input id="em" type="email" autocomplete="email" required></label>
+    <label class="field">Password<input id="pw" type="password" autocomplete="current-password" minlength="6" required></label>
+    <p class="msg" id="lm">${esc(msg)}</p>
+    <div class="actions"><button class="btn main" type="submit">Accedi</button><button class="btn" type="button" id="reg">Crea account</button></div>
+  </form>`;
+  $("#fl").addEventListener("submit", async e => {
+    e.preventDefault();
+    const {error} = await sb.auth.signInWithPassword({email:$("#em").value.trim(), password:$("#pw").value});
+    if (error) $("#lm").textContent = error.message.includes("Invalid") ? "Email o password sbagliate." : error.message;
+  });
+  $("#reg").addEventListener("click", async () => {
+    if (!$("#fl").reportValidity()) return;
+    const {data, error} = await sb.auth.signUp({email:$("#em").value.trim(), password:$("#pw").value});
+    if (error) return $("#lm").textContent = error.message;
+    if (!data.session) $("#lm").textContent = "Account creato: conferma dal link che ti è arrivato per email, poi accedi.";
+  });
+}
+
+// ---------- dati ----------
+const recente = d => d && (Date.now() - new Date(d).getTime()) / 864e5 < GIORNI_PROVV;
+function ricalcola(c){
+  c.prezzo = c.prezzo_manuale ?? c.prezzo_auto;
+  c.prezzo_provvisorio = c.prezzo_manuale == null && (c.prezzo_auto == null || recente(c.data_uscita));
+}
+async function carica(){
+  $("#main").innerHTML = `<p class="empty">Caricamento catalogo…</p>`;
+  const tutte = [];
+  for (let da = 0; ; da += 1000) {
+    const {data, error} = await sb.from("catalogo").select("*").range(da, da + 999);
+    if (error) { $("#main").innerHTML = `<p class="empty">Errore nel caricamento: ${esc(error.message)}</p>`; return; }
+    tutte.push(...data);
+    if (data.length < 1000) break;
+  }
+  const n = x => { const v = parseInt(x, 10); return isNaN(v) ? 9999 : v; };
+  tutte.sort((a,b) => (b.data_uscita||"").localeCompare(a.data_uscita||"") || n(a.numero) - n(b.numero) || a.numero.localeCompare(b.numero));
+  tutte.forEach(c => { c.prezzo_auto = c.prezzo_auto == null ? null : +c.prezzo_auto;
+    c.prezzo_manuale = c.prezzo_manuale == null ? null : +c.prezzo_manuale;
+    c.prezzo_pagato = c.prezzo_pagato == null ? null : +c.prezzo_pagato; ricalcola(c); });
+  S.cards = tutte;
+  const m = new Map(); tutte.forEach(c => m.has(c.espansione_id) || m.set(c.espansione_id, {id:c.espansione_id, nome:c.espansione, uscita:c.data_uscita}));
+  S.sets = [...m.values()];
+  const {data:r} = await sb.from("rarita").select("*").order("ordine");
+  S.rarita = r || [];
+  render();
+}
+
+// ---------- filtri ----------
+function diValore(c){ return (c.prezzo != null && c.prezzo >= S.f.soglia) || (S.f.rar > 0 && c.rarita_ordine >= S.f.rar); }
+function cerca(c, q){
+  const num = q.replace(/\s/g,"").split("/")[0];
+  if (/^\d+$/.test(num)) return parseInt(c.numero,10) === parseInt(num,10);
+  const t = norm(q); return norm(c.nome_it).includes(t) || norm(c.nome_en).includes(t) || norm(c.numero) === t;
+}
+function visibili(){
+  const q = $("#q").value.trim();
+  return S.cards.filter(c => {
+    if (S.f.set && c.espansione_id !== S.f.set) return false;
+    if (S.f.stato === "possedute" && !c.copie) return false;
+    if (S.f.stato === "mancanti" && c.copie) return false;
+    if (S.f.stato === "desideri" && !c.desiderata) return false;
+    if (q) return cerca(c, q);              // la ricerca trova anche le carte di poco valore
+    return c.copie > 0 || c.desiderata || diValore(c);
+  });
+}
+
+// ---------- viste ----------
+const imgPiccola = u => u ? u.replace(/\/high\.webp$/, "/low.webp") : "";
+function tile(c){
+  return `<article class="tile${c.copie ? " own" : ""}" data-id="${esc(c.id)}">
+    <img class="im" loading="lazy" onerror="this.style.visibility='hidden'" alt="${esc(c.nome_it || c.nome_en)}" src="${esc(imgPiccola(c.immagine_url))}">
+    ${c.copie ? `<span class="badge">✓ ${c.copie > 1 ? c.copie : ""}</span>` : ""}
+    ${c.desiderata ? `<span class="wish">Cerco</span>` : ""}
+    ${c.copie ? "" : `<button class="add" type="button" data-add="${esc(c.id)}" aria-label="Segna come posseduta">+</button>`}
+    <div class="info"><div class="nm">${esc(c.nome_it || c.nome_en)}</div>
+      <div class="meta">${esc(c.numero)} · ${esc(c.espansione || c.espansione_id)}</div>
+      <div><span class="price">${eur(c.prezzo)}</span>${c.prezzo_provvisorio ? `<span class="prov">provv.</span>` : ""}</div></div>
+  </article>`;
+}
+function vistaCatalogo(){
+  const lista = visibili();
+  const optSet = `<option value="">Tutte</option>` + S.sets.map(s => `<option value="${esc(s.id)}"${s.id===S.f.set?" selected":""}>${esc(s.nome || s.id)}</option>`).join("");
+  const optRar = `<option value="0">Nessuna</option>` + S.rarita.map(r => `<option value="${r.ordine}"${r.ordine==S.f.rar?" selected":""}>${esc(r.nome)}</option>`).join("");
+  const st = [["tutte","Tutte"],["possedute","Possedute"],["mancanti","Mancanti"],["desideri","Cerco"]]
+    .map(([v,t]) => `<option value="${v}"${v===S.f.stato?" selected":""}>${t}</option>`).join("");
+  $("#main").innerHTML = `
+    <div class="filters">
+      <label>Espansione<select id="fset">${optSet}</select></label>
+      <label>Mostra<select id="fsta">${st}</select></label>
+      <label>Valore da (€)<input id="fsog" type="number" inputmode="decimal" min="0" step="0.5" value="${S.f.soglia}"></label>
+      <label>Oppure rarità da<select id="frar">${optRar}</select></label>
+    </div>
+    <p class="note">${lista.length} carte. ${$("#q").value.trim() ? "La ricerca mostra anche le carte sotto la soglia." : "Le carte che hai o che cerchi restano sempre visibili."}</p>
+    ${lista.length ? `<div class="grid">${lista.map(tile).join("")}</div>` : `<p class="empty">Nessuna carta con questi filtri.</p>`}`;
+  $("#fset").onchange = e => { S.f.set = e.target.value; salvaFiltri(); render(); };
+  $("#fsta").onchange = e => { S.f.stato = e.target.value; salvaFiltri(); render(); };
+  $("#fsog").onchange = e => { S.f.soglia = Math.max(0, parseFloat(String(e.target.value).replace(",", ".")) || 0); salvaFiltri(); render(); };
+  $("#frar").onchange = e => { S.f.rar = +e.target.value; salvaFiltri(); render(); };
+}
+function vistaRiepilogo(){
+  const mie = S.cards.filter(c => c.copie > 0);
+  const valore = mie.reduce((t,c) => t + (c.prezzo || 0) * c.copie, 0);
+  const conPagato = mie.filter(c => c.prezzo_pagato != null);
+  const speso = conPagato.reduce((t,c) => t + c.prezzo_pagato * c.copie, 0);
+  const valConPagato = conPagato.reduce((t,c) => t + (c.prezzo || 0) * c.copie, 0);
+  const diff = valConPagato - speso;
+  const righe = S.sets.map(s => {
+    const tot = S.cards.filter(c => c.espansione_id === s.id && diValore(c));
+    const ho = tot.filter(c => c.copie > 0).length;
+    const pct = tot.length ? Math.round(ho / tot.length * 100) : 0;
+    return `<div class="setrow"><div class="row"><b>${esc(s.nome || s.id)}</b><span class="price">${ho} / ${tot.length}</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join("");
+  $("#main").innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${eur(valore)}</b><span>valore della collezione</span></div>
+      <div class="stat"><b>${mie.length}</b><span>carte diverse · ${mie.reduce((t,c)=>t+c.copie,0)} copie</span></div>
+      <div class="stat"><b>${eur(speso)}</b><span>speso (su ${conPagato.length} carte con prezzo pagato)</span></div>
+      <div class="stat"><b style="color:${diff>=0?"var(--ok)":"var(--red)"}">${diff>=0?"+":""}${eur(diff)}</b><span>guadagno su quelle carte</span></div>
+    </div>
+    <h2 style="font-size:18px;margin:0 0 4px">Completamento per espansione</h2>
+    <p class="note">Carte di valore (da ${eur(S.f.soglia)}${S.f.rar ? " o rarità da " + esc((S.rarita.find(r=>r.ordine==S.f.rar)||{}).nome || "") : ""}) che possiedi.</p>
+    ${righe || `<p class="empty">Nessuna espansione.</p>`}`;
+}
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === S.tab));
+  S.tab === "catalogo" ? vistaCatalogo() : vistaRiepilogo();
+}
+
+// ---------- salvataggio ----------
+async function salva(c, nuovo){
+  const prima = {...c};
+  Object.assign(c, nuovo); ricalcola(c);
+  const {error} = await sb.from("collezione").upsert({
+    user_id: S.user.id, carta_id: c.id, copie: c.copie || 0, desiderata: !!c.desiderata,
+    condizione: c.condizione || null, prezzo_pagato: c.prezzo_pagato, prezzo_manuale: c.prezzo_manuale,
+    aggiornato_il: new Date().toISOString()}, {onConflict: "user_id,carta_id"});
+  if (error) { Object.assign(c, prima); toast("Non salvato: " + error.message); }
+  render();
+  return !error;
+}
+
+// ---------- scheda carta ----------
+async function apri(c){
+  const d = $("#dlg");
+  let copie = c.copie || 0, cerco = !!c.desiderata;
+  const num = v => { const x = parseFloat(String(v).replace(",", ".")); return isNaN(x) ? null : Math.round(x * 100) / 100; };
+  d.innerHTML = `<form class="sheet" method="dialog" id="fs">
+    <div class="head"><img src="${esc(c.immagine_url || "")}" alt="${esc(c.nome_it || c.nome_en)}">
+      <div><h2>${esc(c.nome_it || c.nome_en)}</h2>
+        <div class="kv">${esc(c.espansione || "")} · n. ${esc(c.numero)}<br>${esc(c.rarita || "")}${c.immagine_lingua === "en" ? "<br>(immagine inglese)" : ""}</div>
+        <div class="big" style="margin-top:10px">${eur(c.prezzo)}</div>
+        <div class="kv">${c.prezzo_manuale != null ? "prezzo inserito da te · Cardmarket " + eur(c.prezzo_auto) : "trend Cardmarket"}${c.prezzo_provvisorio ? ' · <span class="prov">provvisorio</span>' : ""}</div>
+      </div></div>
+    <div class="chart" id="ch"><p class="kv">Storico prezzi…</p></div>
+    <div class="row"><span>Copie</span><div class="step"><button type="button" id="meno" aria-label="Una copia in meno">−</button><output id="nc">${copie}</output><button type="button" id="piu" aria-label="Una copia in più">+</button></div></div>
+    <button type="button" class="toggle" id="tw" aria-pressed="${cerco}">${cerco ? "In lista desideri" : "Aggiungi alla lista desideri"}</button>
+    <div class="two">
+      <label class="field">Condizione<select id="cond"><option value="">—</option>${CONDIZIONI.map(x => `<option${x===c.condizione?" selected":""}>${x}</option>`).join("")}</select></label>
+      <label class="field">Prezzo pagato (a copia)<input id="pag" inputmode="decimal" placeholder="es. 12,50" value="${c.prezzo_pagato ?? ""}"></label>
+    </div>
+    <label class="field">Correggi prezzo (vuoto = usa Cardmarket)<input id="man" inputmode="decimal" placeholder="${c.prezzo_auto != null ? String(c.prezzo_auto).replace(".", ",") : "es. 30"}" value="${c.prezzo_manuale ?? ""}"></label>
+    <div class="actions"><button type="button" class="btn" id="chiudi">Chiudi</button><button type="submit" class="btn main">Salva</button></div>
+  </form>`;
+  $("#meno").onclick = () => { copie = Math.max(0, copie - 1); $("#nc").value = copie; };
+  $("#piu").onclick = () => { copie++; $("#nc").value = copie; };
+  $("#tw").onclick = e => { cerco = !cerco; e.target.setAttribute("aria-pressed", cerco); e.target.textContent = cerco ? "In lista desideri" : "Aggiungi alla lista desideri"; };
+  $("#chiudi").onclick = () => d.close();
+  $("#fs").onsubmit = async e => {
+    e.preventDefault();
+    const ok = await salva(c, {copie, desiderata: cerco, condizione: $("#cond").value || null,
+      prezzo_pagato: num($("#pag").value), prezzo_manuale: num($("#man").value)});
+    if (ok) { d.close(); toast("Salvato"); }
+  };
+  d.showModal();
+  const {data} = await sb.from("prezzi").select("data,riferimento").eq("carta_id", c.id).order("data").limit(365);
+  disegnaStorico((data || []).filter(p => p.riferimento != null).map(p => ({d:p.data, v:+p.riferimento})));
+}
+function disegnaStorico(p){
+  const box = $("#ch"); if (!box) return;
+  if (p.length < 2) { box.innerHTML = `<p class="kv">Storico prezzi: serve almeno un secondo giorno di dati.</p>`; box.style.height = "auto"; return; }
+  const W = box.clientWidth || 300, H = 120, pad = 22;
+  const vs = p.map(x => x.v), mn = Math.min(...vs), mx = Math.max(...vs), rg = mx - mn || 1;
+  const X = i => pad + i * (W - pad * 2) / (p.length - 1), Y = v => H - pad - (v - mn) / rg * (H - pad * 2);
+  const pts = p.map((x,i) => `${X(i).toFixed(1)},${Y(x.v).toFixed(1)}`).join(" ");
+  const dt = s => s.slice(8,10) + "/" + s.slice(5,7);
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Storico prezzi">
+    <polyline points="${pts}" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linejoin="round"/>
+    <text x="${pad}" y="12" font-size="11" fill="var(--muted)">max ${eur(mx)}</text>
+    <text x="${W - pad}" y="12" font-size="11" fill="var(--muted)" text-anchor="end">min ${eur(mn)}</text>
+    <text x="${pad}" y="${H - 4}" font-size="11" fill="var(--muted)">${dt(p[0].d)}</text>
+    <text x="${W - pad}" y="${H - 4}" font-size="11" fill="var(--muted)" text-anchor="end">${dt(p[p.length-1].d)}</text></svg>`;
+}
+
+// ---------- eventi ----------
+$("#main").addEventListener("click", async e => {
+  const add = e.target.closest("[data-add]");
+  if (add) { e.stopPropagation(); const c = S.cards.find(x => x.id === add.dataset.add);
+    if (await salva(c, {copie: 1})) toast("Segnata come posseduta"); return; }
+  const t = e.target.closest(".tile");
+  if (t) apri(S.cards.find(x => x.id === t.dataset.id));
+});
+$("#q").addEventListener("input", () => { if (S.tab !== "catalogo") S.tab = "catalogo"; render(); });
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); window.scrollTo(0,0); });
+$("#esci").onclick = () => sb.auth.signOut();
+
+sb.auth.onAuthStateChange((ev, session) => {
+  const u = session?.user || null;
+  if (u && (!S.user || S.user.id !== u.id)) { S.user = u; $("#hdr").hidden = false; setTimeout(carica, 0); }
+  else if (!u) { S.user = null; S.cards = []; mostraLogin(); }
+});
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
